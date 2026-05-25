@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Shep's Newsagent">
+  <meta name="theme-color" content="#D4A017">
+  <meta name="description" content="The Bullseye-Inspired Barrowford Newsagent Challenge! Serve customers by throwing rolled newspapers and coins at the shelves.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <title>Shep's Newsagent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bowlby+One+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="game-container">
+
+  <!-- Main game canvas -->
+  <canvas id="canvas" width="800" height="545"></canvas>
+
+  <!-- Throw selection buttons (HTML, not canvas — large touch targets) -->
+  <div id="throw-buttons">
+    <button class="throw-btn" id="btn-newspaper">
+      Roll Newspaper
+      <small>1× points — Steady aim</small>
+    </button>
+    <button class="throw-btn selected" id="btn-1p">
+      Throw 1p Coin
+      <small>2× points — Tricky!</small>
+    </button>
+    <button class="throw-btn" id="btn-2p">
+      Throw 2p Coin!
+      <small>3× points — Expert only!</small>
+    </button>
+  </div>
+
+  <!-- TITLE SCREEN overlay -->
+  <div id="overlay-title" class="overlay active">
+    <div id="title-rainbow-border"></div>
+    <div id="title-inner">
+      <div id="title-main">SHEP'S NEWSAGENT</div>
+      <div id="title-sub">The Bullseye-Inspired Newsagent Challenge!</div>
+      <div id="title-location">Barrowford, East Lancashire &bull; Est. 1976</div>
+
+      <div id="title-avatars">
+        <div style="text-align:center">
+          <canvas id="title-canvas-chris" width="120" height="150"></canvas>
+          <div style="color:#FFD700;font-family:'Bowlby One SC',sans-serif;font-size:13px;margin-top:4px">Chris</div>
+        </div>
+        <div style="text-align:center">
+          <canvas id="title-canvas-barrie" width="120" height="150"></canvas>
+          <div style="color:#FFD700;font-family:'Bowlby One SC',sans-serif;font-size:13px;margin-top:4px">Barrie</div>
+        </div>
+      </div>
+
+      <button id="btn-start">▶ PRESS START ◀</button>
+
+      <div style="color:#aaa;font-size:11px;font-family:Arial;margin-top:4px">
+        Click the shelves to serve customers &bull; Choose your projectile wisely!
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIZE REVEAL overlay -->
+  <div id="overlay-prize" class="overlay">
+    <div id="prize-stage">
+      <div id="curtain-left"></div>
+      <div id="curtain-right"></div>
+      <div id="prize-content">
+        <div id="prize-fanfare">✨ AND THE MYSTERY PRIZE IS... ✨</div>
+        <div id="prize-name"></div>
+        <div id="prize-value"></div>
+        <div id="prize-desc"></div>
+        <div id="prize-score-display"></div>
+        <button id="btn-play-again">▶ PLAY AGAIN ◀</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Load order matters: data files before game engine -->
+<script src="characters.js"></script>
+<script src="items.js"></script>
+<script src="prizes.js"></script>
+<script src="game.js"></script>
+
+<script>
+  // Register service worker for PWA offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

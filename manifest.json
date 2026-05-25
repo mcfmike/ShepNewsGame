@@ -1,0 +1,18 @@
+{
+  "name": "Shep's Newsagent",
+  "short_name": "ShepNews",
+  "description": "The Bullseye-Inspired Barrowford Newsagent Challenge! Serve customers by throwing rolled newspapers and coins at the shelves.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#8B4513",
+  "theme_color": "#D4A017",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

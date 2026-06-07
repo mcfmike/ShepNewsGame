@@ -3,8 +3,54 @@
 // ===== CANVAS SETUP =====
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const CW = canvas.width;   // 800
-const CH = canvas.height;  // 545
+
+// The game is drawn against a logical coordinate system that always matches
+// the on-screen aspect ratio, so the scene fills the canvas with no
+// letterboxing. CH is held at the original design height; CW is recalculated
+// on resize to match whatever landscape aspect ratio the device presents.
+const REF_CW = 800;  // original design width — used to rescale shelf layout
+const REF_CH = 545;  // original design height (kept constant)
+let CW = REF_CW;
+let CH = REF_CH;
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  const cssW = Math.max(1, rect.width);
+  const cssH = Math.max(1, rect.height);
+
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+
+  CH = REF_CH;
+  CW = Math.round(CH * (cssW / cssH));
+
+  ctx.setTransform(canvas.width / CW, 0, 0, canvas.height / CH, 0, 0);
+
+  recomputeLayoutConstants();
+  layoutShelfItems();
+
+  // Keep the crosshair locked on the current target if mid-aim
+  if (G && (G.state === 'AIMING' || G.state === 'ROUND_START')) {
+    const targetId = getCurrentTargetId();
+    const target = SHELF_ITEMS[targetId];
+    if (target) {
+      G.aimX = target.x + target.w / 2;
+      G.aimY = target.y + target.h / 2;
+    }
+  }
+}
+
+function checkOrientation() {
+  const portrait = window.innerHeight > window.innerWidth;
+  const overlay = document.getElementById('overlay-rotate');
+  if (overlay) overlay.classList.toggle('active', portrait);
+}
+
+function handleViewportChange() {
+  checkOrientation();
+  resizeCanvas();
+}
 
 // Polyfill for ctx.roundRect (Safari <15.4)
 if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -25,14 +71,36 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 }
 
 // ===== LAYOUT CONSTANTS =====
+// Vertical layout is fixed (CH stays constant); horizontal positions scale
+// with CW so the scene reflows to fill whatever width the device offers.
 const HEADER_H = 45;
 const COUNTER_Y = 338;
 const CHAR_HEAD_Y = 455;
-const CHRIS_X   = 95;
-const BARRIE_X  = 705;
-const CUSTOMER_X = 400;
-const THROW_ORIGIN_X = 400;
-const THROW_ORIGIN_Y = CH + 10;
+let CHRIS_X, BARRIE_X, CUSTOMER_X, THROW_ORIGIN_X, THROW_ORIGIN_Y;
+
+function recomputeLayoutConstants() {
+  CHRIS_X = CW * (95 / REF_CW);
+  BARRIE_X = CW * (705 / REF_CW);
+  CUSTOMER_X = CW / 2;
+  THROW_ORIGIN_X = CW / 2;
+  THROW_ORIGIN_Y = CH + 10;
+}
+recomputeLayoutConstants();
+
+// Shelf items are designed for an 800-wide reference canvas; rescale their
+// x position and width to match the current logical width on every resize.
+const SHELF_ITEM_BASE = {};
+Object.values(SHELF_ITEMS).forEach(item => {
+  SHELF_ITEM_BASE[item.id] = { x: item.x, w: item.w };
+});
+function layoutShelfItems() {
+  const scale = CW / REF_CW;
+  Object.values(SHELF_ITEMS).forEach(item => {
+    const base = SHELF_ITEM_BASE[item.id];
+    item.x = base.x * scale;
+    item.w = base.w * scale;
+  });
+}
 
 // ===== INTRO SEQUENCE =====
 const INTRO_STEPS = [
@@ -54,7 +122,7 @@ function resetGame() {
     itemIndex: 0,
     throwsLeft: 3,
     projectileType: '1p',
-    aimX: 400, aimY: 200,
+    aimX: CW / 2, aimY: 200,
     wobbleX: 0, wobbleY: 0,
     projectile: null,
     speech: null,
@@ -118,29 +186,41 @@ function playSound(type) {
 // ===== INPUT =====
 function setupInput() {
   canvas.addEventListener('mousemove', e => {
-    const pos = canvasXY(e.clientX, e.clientY);
-    G.aimX = pos.x;
-    G.aimY = pos.y;
+    if (G.state === 'AIMING') {
+      const pos = canvasXY(e.clientX, e.clientY);
+      G.aimX = pos.x;
+      G.aimY = pos.y;
+    }
   });
   canvas.addEventListener('click', e => {
     if (G.state === 'AIMING') {
       e.preventDefault();
       throwProjectile();
+    } else if (G.state === 'BONUS_PLAYING') {
+      e.preventDefault();
+      const pos = canvasXY(e.clientX, e.clientY);
+      handleBonusTap(pos.x, pos.y);
     }
   });
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
     const t = e.touches[0];
     const pos = canvasXY(t.clientX, t.clientY);
-    G.aimX = pos.x;
-    G.aimY = pos.y;
+    if (G.state === 'AIMING') {
+      G.aimX = pos.x;
+      G.aimY = pos.y;
+    } else if (G.state === 'BONUS_PLAYING') {
+      handleBonusTap(pos.x, pos.y);
+    }
   }, { passive: false });
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    const t = e.touches[0];
-    const pos = canvasXY(t.clientX, t.clientY);
-    G.aimX = pos.x;
-    G.aimY = pos.y;
+    if (G.state === 'AIMING') {
+      const t = e.touches[0];
+      const pos = canvasXY(t.clientX, t.clientY);
+      G.aimX = pos.x;
+      G.aimY = pos.y;
+    }
   }, { passive: false });
   canvas.addEventListener('touchend', e => {
     e.preventDefault();
@@ -196,6 +276,14 @@ function disableThrowButtons() {
 }
 function enableThrowButtons() {
   document.querySelectorAll('.throw-btn').forEach(b => b.disabled = false);
+}
+
+// Bonus rounds use tap-based mechanics rather than projectile selection,
+// so the throw-button bar is hidden to give the minigame the full canvas.
+function setThrowBarVisible(visible) {
+  const bar = document.getElementById('throw-buttons');
+  bar.classList.toggle('hidden', !visible);
+  resizeCanvas();
 }
 
 // ===== COLOUR UTILITIES =====
@@ -374,6 +462,8 @@ function advanceToNextItem() {
     G.speech = null;
     if (G.round >= ROUNDS.length) {
       setTimeout(() => showPrizeReveal(), 600);
+    } else if (BONUS_TRIGGERS[G.round]) {
+      setTimeout(() => startBonusRound(BONUS_TRIGGERS[G.round]), 700);
     } else {
       G.currentRound = ROUNDS[G.round];
       G.state = 'ROUND_START';
@@ -516,11 +606,21 @@ function update(ts, dt) {
   // State updates
   if (G.state === 'INTRO') updateIntro(ts);
   if (G.state === 'ROUND_START') updateRoundStart(ts);
+  if (G.state === 'BONUS_INTRO' || G.state === 'BONUS_PLAYING' || G.state === 'BONUS_RESULT') {
+    updateBonus(ts, dt);
+  }
 }
 
 // ===== RENDERING =====
 function render(ts) {
   ctx.clearRect(0, 0, CW, CH);
+
+  if (G.state === 'BONUS_INTRO' || G.state === 'BONUS_PLAYING' || G.state === 'BONUS_RESULT') {
+    renderBonus(ts);
+    drawFloatingScores();
+    drawSpeechBubble();
+    return;
+  }
 
   drawBackground(ts);
   drawShelfItems(ts);
@@ -703,7 +803,7 @@ function drawCounter() {
   ctx.fillRect(0, COUNTER_Y + 52, CW, 5);
 
   // Till on right side
-  drawTill(640, COUNTER_Y - 35);
+  drawTill(CW - 160, COUNTER_Y - 35);
 }
 
 function drawTill(x, y) {
@@ -1118,6 +1218,9 @@ function init() {
   resetGame();
   setupInput();
   setupButtons();
+  handleViewportChange();
+  window.addEventListener('resize', handleViewportChange);
+  window.addEventListener('orientationchange', handleViewportChange);
   renderTitleAvatars();
   requestAnimationFrame(loop);
 }

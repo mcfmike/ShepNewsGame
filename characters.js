@@ -133,6 +133,71 @@ const CHARACTER_DATA = {
     collarColor: '#884488', collarStyle: 'scoop',
     requestLine: "Radio Times and the Express please, pet."
   },
+  beech: {
+    name: 'Mr Beech', role: 'Butcher',
+    gender: 'male',
+    skinTone: '#E8B088',
+    faceW: 64, faceH: 70,
+    hairColor: '#704830', hairStyle: 'thinning',
+    eyeColor: '#5C4020', hasGlasses: false,
+    hasMoustache: true,
+    noseTip: 'bulbous',
+    baseExpression: 'grin',
+    collarColor: '#FFFFFF', collarStyle: 'collar',
+    catchphrases: [
+      "Now that's a proper cut, that is!",
+      "Champion eye for meat, you've got!",
+      "You'll go far in this trade, lad!"
+    ],
+    missPhrases: [
+      "Ooh, butter fingers!",
+      "That one got away from you!",
+      "Sharper eyes next time, eh?"
+    ]
+  },
+  ken: {
+    name: 'Ken', role: 'Chip Shop Owner',
+    gender: 'male',
+    skinTone: '#F0C8A0',
+    faceW: 58, faceH: 68,
+    hairColor: '#888888', hairStyle: 'short-side-part',
+    eyeColor: '#3E6B4A', hasGlasses: false,
+    hasMoustache: true,
+    noseTip: 'normal',
+    baseExpression: 'smile',
+    collarColor: '#2299CC', collarStyle: 'collar',
+    catchphrases: [
+      "Cooked to perfection, that!",
+      "Smashing! Crispy out, fluffy in't middle!",
+      "You'd give Harry Ramsden a run for his money!"
+    ],
+    missPhrases: [
+      "Ee, that's a bit burnt, that!",
+      "Back in the fryer with that one!",
+      "Timing's everything in this game, lad!"
+    ]
+  },
+  banny: {
+    name: 'Banny', role: 'Baker',
+    gender: 'female',
+    skinTone: '#F2D2B0',
+    faceW: 56, faceH: 64,
+    hairColor: '#A0522D', hairStyle: 'perm',
+    eyeColor: '#6B4226', hasGlasses: false,
+    noseTip: 'button',
+    baseExpression: 'smile',
+    collarColor: '#FFD0DC', collarStyle: 'scoop',
+    catchphrases: [
+      "Ooh, lovely catch, that!",
+      "You've got a real knack for this!",
+      "Fresh from the oven and right into your hands!"
+    ],
+    missPhrases: [
+      "Ah, crumbs — missed that one!",
+      "Slipped right through your fingers!",
+      "Better luck with the next batch, love!"
+    ]
+  },
   derek: {
     name: 'Derek', role: 'Customer',
     gender: 'male',

@@ -12,12 +12,14 @@ const REF_CW = 800;  // original design width — used to rescale shelf layout
 const REF_CH = 545;  // original design height (kept constant)
 let CW = REF_CW;
 let CH = REF_CH;
+let cachedCSSH = REF_CH;  // updated on resize; used to scale canvas-drawn text
 
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const rect = canvas.getBoundingClientRect();
   const cssW = Math.max(1, rect.width);
   const cssH = Math.max(1, rect.height);
+  cachedCSSH = cssH;
 
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
@@ -50,6 +52,12 @@ function checkOrientation() {
 function handleViewportChange() {
   checkOrientation();
   resizeCanvas();
+}
+
+function tryEnterFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req) req.call(el, { navigationUI: 'hide' }).catch(() => {});
 }
 
 // Polyfill for ctx.roundRect (Safari <15.4)
@@ -239,6 +247,7 @@ function canvasXY(cx, cy) {
 // ===== BUTTONS =====
 function setupButtons() {
   document.getElementById('btn-start').addEventListener('click', () => {
+    tryEnterFullscreen();
     getAudioCtx(); // unlock audio
     startIntro();
   });
@@ -252,6 +261,7 @@ function setupButtons() {
   });
 
   document.getElementById('btn-play-again').addEventListener('click', () => {
+    tryEnterFullscreen();
     document.getElementById('overlay-prize').classList.remove('active');
     document.getElementById('btn-play-again').classList.remove('visible');
     document.getElementById('prize-content').classList.remove('visible');
@@ -1045,12 +1055,17 @@ function drawSpeechBubble() {
   else if (who === 'barrie') anchorX = BARRIE_X;
   else anchorX = CUSTOMER_X;
 
-  const bubbleY = CHAR_HEAD_Y - 120;
-  const maxBW = 200;
-  const pad = 12;
+  // Scale font so text stays readable regardless of screen size.
+  // cachedCSSH/CH converts logical units → CSS pixels; target ≥15 CSS px.
+  const cssScale = cachedCSSH / CH;
+  const fontSize = Math.max(12, Math.ceil(15 / cssScale));
+  const lh = Math.round(fontSize * 1.4);
+  const pad = Math.round(fontSize * 0.9);
+  const maxBW = Math.max(180, Math.round(CW * 0.30));
 
-  ctx.font = '12px Arial';
-  // Build lines
+  const bubbleY = CHAR_HEAD_Y - 120;
+
+  ctx.font = `${fontSize}px Arial`;
   const words = text.split(' ');
   const lines = [];
   let cur = '';
@@ -1061,9 +1076,8 @@ function drawSpeechBubble() {
   });
   if (cur) lines.push(cur);
 
-  const lh = 16;
   const bh = lines.length * lh + pad * 2;
-  const bw = Math.max(80, Math.min(maxBW, ...lines.map(l => ctx.measureText(l).width + pad * 2)));
+  const bw = Math.max(fontSize * 5, Math.min(maxBW, ...lines.map(l => ctx.measureText(l).width + pad * 2)));
 
   let bx = anchorX - bw / 2;
   bx = Math.max(6, Math.min(CW - bw - 6, bx));
@@ -1103,9 +1117,9 @@ function drawSpeechBubble() {
   // Text
   ctx.fillStyle = '#1a1a1a';
   ctx.textAlign = 'left';
-  ctx.font = '12px Arial';
+  ctx.font = `${fontSize}px Arial`;
   lines.forEach((line, i) => {
-    ctx.fillText(line, bx + pad, by + pad + 12 + i * lh);
+    ctx.fillText(line, bx + pad, by + pad + fontSize + i * lh);
   });
 }
 
@@ -1163,10 +1177,15 @@ function drawCustomerRequest(ts) {
   const cdata = CHARACTER_DATA[cid];
   const line = G.currentRound.line;
 
-  // Panel at top of character area
-  const px = CW / 2 - 200;
-  const py = COUNTER_Y - 48;
-  const pw = 400, ph = 44;
+  // Scale font to stay readable on small screens
+  const cssScale = cachedCSSH / CH;
+  const fontSize = Math.max(12, Math.ceil(14 / cssScale));
+  const lh = Math.round(fontSize * 1.35);
+
+  const pw = Math.min(Math.round(CW * 0.55), 480);
+  const ph = Math.round(fontSize * 1.6 + lh * 2);
+  const px = CW / 2 - pw / 2;
+  const py = COUNTER_Y - ph - 4;
 
   // Request box
   ctx.fillStyle = 'rgba(255, 253, 231, 0.95)';
@@ -1179,7 +1198,7 @@ function drawCustomerRequest(ts) {
   // Customer's speech in the box
   ctx.fillStyle = '#1a1a1a';
   ctx.textAlign = 'center';
-  ctx.font = 'italic 12px Georgia, serif';
+  ctx.font = `italic ${fontSize}px Georgia, serif`;
 
   const words = line.split(' ');
   const lns = [];
@@ -1192,8 +1211,9 @@ function drawCustomerRequest(ts) {
   if (cur2) lns.push(cur2);
 
   const usedLines = lns.slice(0, 2);
+  const textStartY = py + Math.round((ph - usedLines.length * lh) / 2) + fontSize;
   usedLines.forEach((l, i) => {
-    ctx.fillText(l, CW / 2, py + 15 + i * 16);
+    ctx.fillText(l, CW / 2, textStartY + i * lh);
   });
 }
 

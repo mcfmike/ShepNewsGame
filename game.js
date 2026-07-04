@@ -43,10 +43,28 @@ function resizeCanvas() {
   }
 }
 
+function isIOSSafariNotPWA() {
+  const ua = navigator.userAgent;
+  const ios = /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return ios && !window.navigator.standalone;
+}
+
+let iosHintTimer = null;
+
+function showIOSHint() {
+  const hint = document.getElementById('ios-hint');
+  if (!hint || !isIOSSafariNotPWA()) return;
+  hint.classList.remove('hidden');
+  clearTimeout(iosHintTimer);
+  iosHintTimer = setTimeout(() => hint.classList.add('hidden'), 7000);
+}
+
 function checkOrientation() {
   const portrait = window.innerHeight > window.innerWidth;
   const overlay = document.getElementById('overlay-rotate');
   if (overlay) overlay.classList.toggle('active', portrait);
+  if (!portrait) showIOSHint();
 }
 
 function handleViewportChange() {
@@ -258,6 +276,12 @@ function setupButtons() {
       btn.addEventListener('click', () => selectProjectile(type));
       btn.addEventListener('touchend', e => { e.preventDefault(); selectProjectile(type); });
     }
+  });
+
+  const iosClose = document.getElementById('ios-hint-close');
+  if (iosClose) iosClose.addEventListener('click', () => {
+    clearTimeout(iosHintTimer);
+    document.getElementById('ios-hint').classList.add('hidden');
   });
 
   document.getElementById('btn-play-again').addEventListener('click', () => {
@@ -1061,7 +1085,8 @@ function drawSpeechBubble() {
   const fontSize = Math.max(12, Math.ceil(15 / cssScale));
   const lh = Math.round(fontSize * 1.4);
   const pad = Math.round(fontSize * 0.9);
-  const maxBW = Math.max(180, Math.round(CW * 0.30));
+  // Wider max width → fewer lines → bubble less likely to overflow top of canvas
+  const maxBW = Math.max(180, Math.round(CW * 0.44));
 
   const bubbleY = CHAR_HEAD_Y - 120;
 
@@ -1081,7 +1106,8 @@ function drawSpeechBubble() {
 
   let bx = anchorX - bw / 2;
   bx = Math.max(6, Math.min(CW - bw - 6, bx));
-  const by = bubbleY - bh;
+  // Clamp so the bubble never scrolls above the top of the canvas
+  const by = Math.max(4, bubbleY - bh);
 
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';

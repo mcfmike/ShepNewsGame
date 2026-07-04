@@ -363,6 +363,46 @@ html, body {
   line-height: 1.4;
 }
 
+/* ========= iOS "Add to Home Screen" hint ========= */
+#ios-hint {
+  position: absolute;
+  bottom: 56px; /* sit just above the throw-buttons bar */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(20, 10, 2, 0.92);
+  color: var(--cream);
+  font-family: Arial, sans-serif;
+  font-size: clamp(10px, 2.8vw, 13px);
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--gold);
+  white-space: nowrap;
+  animation: hint-fadein 0.4s ease;
+  pointer-events: auto;
+}
+
+#ios-hint.hidden { display: none; }
+
+#ios-hint-close {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@keyframes hint-fadein {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* ========= CANVAS CURSOR on mobile ========= */
 @media (pointer: coarse) {
   #canvas { cursor: default; }
